@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, prod-hardening ]
   pull_request:
     branches: [ main, master ]
 
@@ -30,3 +30,9 @@ jobs:
 
       - name: Run In-Memory Microbenchmark
         run: java -jar target/reverse-proxy-rate-limiter-1.0.0.jar bench-memory --requests 100000 --threads 4
+
+      - name: Build Docker Image
+        run: docker build -t reverse-proxy-rate-limiter:test .
+
+      - name: Smoke Test Docker Image
+        run: docker run --rm reverse-proxy-rate-limiter:test --help
