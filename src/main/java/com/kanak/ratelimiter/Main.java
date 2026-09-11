@@ -45,12 +45,13 @@ public final class Main {
     }
 
     private static void startServer(String[] args) throws Exception {
-        int port = 8080;
-        String upstreamHost = "127.0.0.1";
-        int upstreamPort = 8081;
-        long capacity = 1000;
-        long refillRate = 500;
-        RateLimitAlgorithm algo = RateLimitAlgorithm.TOKEN_BUCKET;
+        int port = getEnvInt("PROXY_PORT", getEnvInt("PORT", 8080));
+        String upstreamHost = getEnvString("UPSTREAM_HOST", "127.0.0.1");
+        int upstreamPort = getEnvInt("UPSTREAM_PORT", 8081);
+        long capacity = getEnvLong("RATE_LIMIT_CAPACITY", 1000L);
+        long refillRate = getEnvLong("RATE_LIMIT_REFILL_RATE", 500L);
+        RateLimitAlgorithm algo = RateLimitAlgorithm.valueOf(
+                getEnvString("RATE_LIMIT_ALGORITHM", "TOKEN_BUCKET").toUpperCase());
 
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
@@ -203,6 +204,33 @@ public final class Main {
             BenchmarkResult result = LoadHarness.runInMemoryBenchmark(limiter, rule, requests, threads, keys);
             System.out.println(result.formatReport());
         }
+    }
+
+    private static String getEnvString(String name, String defaultValue) {
+        String val = System.getenv(name);
+        return (val != null && !val.isBlank()) ? val.trim() : defaultValue;
+    }
+
+    private static int getEnvInt(String name, int defaultValue) {
+        String val = System.getenv(name);
+        if (val != null && !val.isBlank()) {
+            try {
+                return Integer.parseInt(val.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return defaultValue;
+    }
+
+    private static long getEnvLong(String name, long defaultValue) {
+        String val = System.getenv(name);
+        if (val != null && !val.isBlank()) {
+            try {
+                return Long.parseLong(val.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return defaultValue;
     }
 
     private static void printUsage() {

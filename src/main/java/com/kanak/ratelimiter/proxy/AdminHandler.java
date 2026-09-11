@@ -28,11 +28,12 @@ public final class AdminHandler {
 
     public boolean handleIfAdminRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
         String uri = request.uri();
-        if (!uri.startsWith("/_admin/")) {
+        if (!uri.startsWith("/_admin/") && !uri.equals("/health") && !uri.startsWith("/health?")) {
             return false;
         }
 
-        if (uri.equals("/_admin/health") || uri.startsWith("/_admin/health?")) {
+        if (uri.equals("/_admin/health") || uri.startsWith("/_admin/health?")
+                || uri.equals("/health") || uri.startsWith("/health?")) {
             sendJsonResponse(ctx, request, HttpResponseStatus.OK, "{\"status\":\"UP\"}");
             return true;
         }

@@ -123,6 +123,12 @@ class ConfigAndAdminTest {
         assertThat(res2.status()).isEqualTo(HttpResponseStatus.OK);
         res2.release();
 
+        FullHttpRequest healthAlias = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/health");
+        assertThat(admin.handleIfAdminRequest(ctx, healthAlias)).isTrue();
+        FullHttpResponse resHealth = ch.readOutbound();
+        assertThat(resHealth.status()).isEqualTo(HttpResponseStatus.OK);
+        resHealth.release();
+
         FullHttpRequest unknown = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/_admin/unknown");
         assertThat(admin.handleIfAdminRequest(ctx, unknown)).isTrue();
         FullHttpResponse res3 = ch.readOutbound();
