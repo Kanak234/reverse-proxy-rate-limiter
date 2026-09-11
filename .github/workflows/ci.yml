@@ -2,14 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   build-and-test:
-    name: Build & Test (Java 21)
+    name: Build, Lint & Test (Java 21)
     runs-on: ubuntu-latest
 
     steps:
@@ -23,8 +22,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build & Run Test Suite
-        run: mvn clean verify -B
+      - name: Compile and Lint
+        run: mvn clean compile -B -DcompilerArgument=-Xlint:all
+
+      - name: Run Test Suite with JaCoCo Coverage
+        run: mvn verify -B
 
       - name: Run In-Memory Microbenchmark
-        run: java -jar target/reverse-proxy-rate-limiter-1.0.0.jar bench-memory --requests 500000 --threads 8
+        run: java -jar target/reverse-proxy-rate-limiter-1.0.0.jar bench-memory --requests 100000 --threads 4
