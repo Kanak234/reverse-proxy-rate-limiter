@@ -19,6 +19,9 @@ public final class RateLimitRule {
 
     private RateLimitRule(Builder builder) {
         this.routePrefix = Objects.requireNonNull(builder.routePrefix, "routePrefix must not be null");
+        if (builder.routePrefix.isBlank()) {
+            throw new IllegalArgumentException("routePrefix must not be blank");
+        }
         this.algorithm = Objects.requireNonNull(builder.algorithm, "algorithm must not be null");
         this.capacity = builder.capacity;
         this.refillRatePerSecond = builder.refillRatePerSecond;

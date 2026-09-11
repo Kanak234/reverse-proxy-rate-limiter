@@ -251,6 +251,63 @@ mvn test
 
 ---
 
+## Limitations & Engineering Trade-Offs
+
+- **Node-Local State Isolation:** Rate limiting counters, token buckets, and sliding windows are maintained strictly in-process and off-heap on each proxy instance. In multi-instance cluster deployments fronted by an external Layer 4 load balancer (e.g. AWS NLB, HAProxy), clients must be routed via IP-hash stickiness to maintain per-client global quotas, or an external distributed coordination layer must be introduced.
+- **HTTP/1.1 Pipeline Only:** Currently implements HTTP/1.1 pipelining and persistent keep-alive connections over TCP. Multiplexed protocols such as HTTP/2 or HTTP/3 (QUIC) are not yet supported.
+- **Timestamp Epoch Safe Rollover:** The 64-bit bit-packed token bucket stores elapsed milliseconds in 32 bits, providing 49.71 days of monotonic time before wrapping around. Millisecond differences are computed using modulo integer arithmetic, requiring that sampled timestamps fall within half-range (24.8 days) of current system time.
+- **Memory Footprint Under Spoofed IP Floods:** Memory consumption scales linearly with the number of unique active client keys ($O(K)$). While the background reaper purges idle keys every 60 seconds (5-minute idle threshold), large-scale distributed attacks involving millions of spoofed IP addresses require configuring sufficient heap/off-heap allocations and shorter idle TTLs.
+
+---
+
+## Reproducible Benchmark Specifications
+
+All reported throughput and latency figures are reproducible with the built-in load harness on bare-metal hardware.
+
+### Hardware & Environment Testbed
+- **CPU:** AMD Ryzen 5 5600H (6 Cores, 12 Threads @ 3.30 GHz base / 4.20 GHz boost, 16 MB L3 Cache)
+- **RAM:** 16 GB DDR4 3200 MT/s Dual-Channel
+- **Operating System:** Linux 7.0.0-31-generic x86_64
+- **JVM Runtime:** Eclipse Temurin OpenJDK 64-Bit Server VM (build 21.0.12.1+1-LTS)
+- **Garbage Collector:** Generational ZGC (`-XX:+UseZGC -XX:+ZGenerational`)
+- **Benchmark Target Commit:** `521f83a1491cf85156ec9187e743e98f8b270f9f`
+
+### Reproducible Command
+```bash
+# 1. Build optimized fat JAR
+mvn clean package -DskipTests
+
+# 2. Execute 1,000,000 requests across 12 concurrent worker threads over 1,000 distinct client keys
+java -XX:+UseZGC -XX:+ZGenerational -jar target/reverse-proxy-rate-limiter-1.0.0.jar bench-memory \
+  --requests 1000000 \
+  --threads 12 \
+  --keys 1000
+```
+
+### Measured Benchmark Output
+```text
+========================================================================
+ Reverse Proxy Rate Limiter Benchmark Report
+========================================================================
+  Total Requests:          1,000,000
+  Admitted (HTTP 200):     1,000,000 (100.00%)
+  Rejected (HTTP 429):     0 (0.00%)
+  Errors:                  0
+  Elapsed Time:            978 ms
+  Throughput:              1,022,494.89 req/sec
+------------------------------------------------------------------------
+ Latency Percentiles:
+  p50 (Median):            0.000 ms (0 us)
+  p90:                     0.000 ms (0 us)
+  p99:                     0.004 ms (4 us)
+  p99.9:                   0.019 ms (19 us)
+  Max:                     43.371 ms (43,371 us)
+========================================================================
+```
+
+---
+
 ## License
 
 MIT License — Copyright (c) 2026 [Kanak Prabhakar](https://github.com/Kanak234).
+

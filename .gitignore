@@ -7,19 +7,27 @@ target/
 *.zip
 *.tar.gz
 *.rar
+dependency-reduced-pom.xml
 
 # Logs
 *.log
 
-# IDE
+# Environment & Local Overrides
+.env
+.env.local
+*.env
+
+# IDE & Editors
 .idea/
 *.iml
 .classpath
 .project
 .settings/
 .vscode/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
-dependency-reduced-pom.xml
