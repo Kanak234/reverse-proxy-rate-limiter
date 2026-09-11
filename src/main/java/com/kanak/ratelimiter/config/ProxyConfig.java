@@ -19,8 +19,17 @@ public final class ProxyConfig {
     private final List<RateLimitRule> rules;
 
     private ProxyConfig(Builder builder) {
+        if (builder.serverPort < 0 || builder.serverPort > 65535) {
+            throw new IllegalArgumentException("serverPort must be between 0 and 65535: " + builder.serverPort);
+        }
+        if (builder.upstreamPort < 1 || builder.upstreamPort > 65535) {
+            throw new IllegalArgumentException("upstreamPort must be between 1 and 65535: " + builder.upstreamPort);
+        }
+        if (builder.upstreamHost == null || builder.upstreamHost.isBlank()) {
+            throw new IllegalArgumentException("upstreamHost must not be null or blank");
+        }
         this.serverPort = builder.serverPort;
-        this.upstreamHost = Objects.requireNonNull(builder.upstreamHost, "upstreamHost must not be null");
+        this.upstreamHost = builder.upstreamHost;
         this.upstreamPort = builder.upstreamPort;
         this.bossThreads = builder.bossThreads;
         this.workerThreads = builder.workerThreads;
